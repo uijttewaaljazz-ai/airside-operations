@@ -14,6 +14,8 @@ import {
   Tooltip,
   useMapEvents,
 } from 'react-leaflet'
+import Header from './components/Header.jsx'
+import Dashboard from './components/Dashboard.jsx'
 import { supabase } from './services/supabase.js'
 
 const APP_USERNAME = 'airside'
@@ -32,7 +34,6 @@ const COLORS = {
   werkzaamheden: '#3a7ca5',
   overig: '#2a7f7a',
 }
-
 
 function AccessScreen({ savedName, onAccess }) {
   const [step, setStep] = useState('login')
@@ -66,10 +67,12 @@ function AccessScreen({ savedName, onAccess }) {
   function saveName(event) {
     event.preventDefault()
     const cleanName = name.trim()
+
     if (cleanName.length < 2) {
       setMessage('Vul je eigen naam in.')
       return
     }
+
     onAccess(cleanName)
   }
 
@@ -99,6 +102,7 @@ function AccessScreen({ savedName, onAccess }) {
                 autoFocus
               />
             </label>
+
             <label>
               Wachtwoord
               <input
@@ -113,12 +117,15 @@ function AccessScreen({ savedName, onAccess }) {
                 autoComplete="current-password"
               />
             </label>
+
             {savedName && (
               <p className="remembered-name">
                 Dit toestel is ingesteld voor <strong>{savedName}</strong>.
               </p>
             )}
+
             {message && <p className="access-message">{message}</p>}
+
             <button className="access-primary" type="submit">
               Inloggen
             </button>
@@ -129,6 +136,7 @@ function AccessScreen({ savedName, onAccess }) {
             <p className="access-intro">
               Deze naam wordt automatisch bij nieuwe meldingen opgeslagen.
             </p>
+
             <label>
               Jouw naam
               <input
@@ -138,7 +146,9 @@ function AccessScreen({ savedName, onAccess }) {
                 autoFocus
               />
             </label>
+
             {message && <p className="access-message">{message}</p>}
+
             <button className="access-primary" type="submit">
               Naam opslaan en doorgaan
             </button>
@@ -159,10 +169,12 @@ function NameDialog({ currentName, onSave, onClose }) {
   function submit(event) {
     event.preventDefault()
     const cleanName = name.trim()
+
     if (cleanName.length < 2) {
       window.alert('Vul een geldige naam in.')
       return
     }
+
     onSave(cleanName)
   }
 
@@ -175,6 +187,7 @@ function NameDialog({ currentName, onSave, onClose }) {
       >
         <h2>Naam op dit toestel wijzigen</h2>
         <p>Nieuwe meldingen worden voortaan onder deze naam opgeslagen.</p>
+
         <label>
           Naam
           <input
@@ -183,9 +196,14 @@ function NameDialog({ currentName, onSave, onClose }) {
             autoFocus
           />
         </label>
+
         <div className="name-actions">
-          <button type="button" onClick={onClose}>Annuleren</button>
-          <button className="primary" type="submit">Opslaan</button>
+          <button type="button" onClick={onClose}>
+            Annuleren
+          </button>
+          <button className="primary" type="submit">
+            Opslaan
+          </button>
         </div>
       </form>
     </div>
@@ -201,9 +219,11 @@ function Clicker({ onClick }) {
         )
         return
       }
+
       onClick(event.latlng)
     },
   })
+
   return null
 }
 
@@ -311,7 +331,6 @@ function Modal({
       setUploading(true)
       const photoUrl = await uploadPhoto()
 
-
       await onSave({
         ...form,
         title: form.title.trim(),
@@ -329,194 +348,196 @@ function Modal({
 
   return (
     <>
-    <div
-      className="overlay"
-      onMouseDown={uploading ? undefined : onClose}
-    >
-      <form
-        className="modal"
-        onSubmit={submit}
-        onMouseDown={(event) => event.stopPropagation()}
+      <div
+        className="overlay"
+        onMouseDown={uploading ? undefined : onClose}
       >
-        <div className="modal-head">
-          <div>
-            <span>
-              {point
-                ? isArchived
-                  ? 'Verwijderd item'
-                  : 'Melding bewerken'
-                : 'Nieuwe melding'}
-            </span>
-            <h2>{point ? point.title : 'Punt toevoegen'}</h2>
+        <form
+          className="modal"
+          onSubmit={submit}
+          onMouseDown={(event) => event.stopPropagation()}
+        >
+          <div className="modal-head">
+            <div>
+              <span>
+                {point
+                  ? isArchived
+                    ? 'Verwijderd item'
+                    : 'Melding bewerken'
+                  : 'Nieuwe melding'}
+              </span>
+              <h2>{point ? point.title : 'Punt toevoegen'}</h2>
+            </div>
+
+            <button type="button" onClick={onClose}>
+              ×
+            </button>
           </div>
-          <button type="button" onClick={onClose}>×</button>
-        </div>
 
-        <p className="coords">
-          {position.lat.toFixed(5)}, {position.lng.toFixed(5)}
-        </p>
-
-        <label>
-          Naam
-          <input
-            name="title"
-            value={form.title}
-            onChange={change}
-            disabled={uploading || isArchived}
-            autoFocus
-          />
-        </label>
-
-        <div className="cols">
-          <label>
-            Categorie
-            <select
-              name="category"
-              value={form.category}
-              onChange={change}
-              disabled={uploading || isArchived}
-            >
-              <option value="schade">Schade</option>
-              <option value="afsluiting">Afsluiting</option>
-              <option value="werkzaamheden">Werkzaamheden</option>
-              <option value="overig">Overig</option>
-            </select>
-          </label>
+          <p className="coords">
+            {position.lat.toFixed(5)}, {position.lng.toFixed(5)}
+          </p>
 
           <label>
-            Status
-            <select
-              name="status"
-              value={form.status}
-              onChange={change}
-              disabled={uploading || isArchived}
-            >
-              <option value="open">Open</option>
-              <option value="in_behandeling">
-                In behandeling
-              </option>
-            </select>
-          </label>
-        </div>
-
-        <div className="cols">
-          <label>
-            Spoed
-            <select
-              name="urgent"
-              value={form.urgent}
-              onChange={change}
-              disabled={uploading || isArchived}
-            >
-              <option value="nee">Nee</option>
-              <option value="ja">Ja</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="operator-readonly">
-          <span>Wordt opgeslagen door</span>
-          <strong>👤 {operatorName}</strong>
-        </div>
-
-        <label>
-          Omschrijving
-          <textarea
-            name="notes"
-            rows="4"
-            value={form.notes}
-            onChange={change}
-            disabled={uploading || isArchived}
-          />
-        </label>
-
-        {!isArchived && (
-          <label>
-            Foto
+            Naam
             <input
-              type="file"
-              accept="image/*"
-              onChange={choosePhoto}
-              disabled={uploading}
+              name="title"
+              value={form.title}
+              onChange={change}
+              disabled={uploading || isArchived}
+              autoFocus
             />
           </label>
-        )}
 
-        {photoPreview && (
-          <button
-            className="photo-button"
-            type="button"
-            onClick={() => setLargePhoto(photoPreview)}
-          >
-            <img
-              className="photo-preview"
-              src={photoPreview}
-              alt="Foto bij de melding"
+          <div className="cols">
+            <label>
+              Categorie
+              <select
+                name="category"
+                value={form.category}
+                onChange={change}
+                disabled={uploading || isArchived}
+              >
+                <option value="schade">Schade</option>
+                <option value="afsluiting">Afsluiting</option>
+                <option value="werkzaamheden">Werkzaamheden</option>
+                <option value="overig">Overig</option>
+              </select>
+            </label>
+
+            <label>
+              Status
+              <select
+                name="status"
+                value={form.status}
+                onChange={change}
+                disabled={uploading || isArchived}
+              >
+                <option value="open">Open</option>
+                <option value="in_behandeling">In behandeling</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="cols">
+            <label>
+              Spoed
+              <select
+                name="urgent"
+                value={form.urgent}
+                onChange={change}
+                disabled={uploading || isArchived}
+              >
+                <option value="nee">Nee</option>
+                <option value="ja">Ja</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="operator-readonly">
+            <span>Wordt opgeslagen door</span>
+            <strong>👤 {operatorName}</strong>
+          </div>
+
+          <label>
+            Omschrijving
+            <textarea
+              name="notes"
+              rows="4"
+              value={form.notes}
+              onChange={change}
+              disabled={uploading || isArchived}
             />
-            <span>Klik om de foto groot te openen</span>
-          </button>
-        )}
-
-        <div className="actions">
-          {point && !isArchived && (
-            <button
-              type="button"
-              className="danger"
-              onClick={onArchive}
-            >
-              Punt verwijderen
-            </button>
-          )}
-
-          {point && isArchived && (
-            <button
-              type="button"
-              className="restore"
-              onClick={onRestore}
-            >
-              Punt herstellen
-            </button>
-          )}
-
-          <span />
-
-          <button type="button" onClick={onClose}>
-            Sluiten
-          </button>
+          </label>
 
           {!isArchived && (
+            <label>
+              Foto
+              <input
+                type="file"
+                accept="image/*"
+                onChange={choosePhoto}
+                disabled={uploading}
+              />
+            </label>
+          )}
+
+          {photoPreview && (
             <button
-              type="submit"
-              className="primary"
-              disabled={uploading}
+              className="photo-button"
+              type="button"
+              onClick={() => setLargePhoto(photoPreview)}
             >
-              {uploading ? 'Foto uploaden…' : 'Opslaan'}
+              <img
+                className="photo-preview"
+                src={photoPreview}
+                alt="Foto bij de melding"
+              />
+              <span>Klik om de foto groot te openen</span>
             </button>
           )}
-        </div>
-      </form>
-    </div>
 
-    {largePhoto && (
-      <div
-        className="lightbox"
-        onMouseDown={() => setLargePhoto('')}
-      >
-        <button
-          type="button"
-          className="lightbox-close"
-          onClick={() => setLargePhoto('')}
-        >
-          ×
-        </button>
-        <img
-          src={largePhoto}
-          alt={point?.title || 'Foto bij melding'}
-          onMouseDown={(event) => event.stopPropagation()}
-        />
+          <div className="actions">
+            {point && !isArchived && (
+              <button
+                type="button"
+                className="danger"
+                onClick={onArchive}
+              >
+                Punt verwijderen
+              </button>
+            )}
+
+            {point && isArchived && (
+              <button
+                type="button"
+                className="restore"
+                onClick={onRestore}
+              >
+                Punt herstellen
+              </button>
+            )}
+
+            <span />
+
+            <button type="button" onClick={onClose}>
+              Sluiten
+            </button>
+
+            {!isArchived && (
+              <button
+                type="submit"
+                className="primary"
+                disabled={uploading}
+              >
+                {uploading ? 'Foto uploaden…' : 'Opslaan'}
+              </button>
+            )}
+          </div>
+        </form>
       </div>
-    )}
-  </>
+
+      {largePhoto && (
+        <div
+          className="lightbox"
+          onMouseDown={() => setLargePhoto('')}
+        >
+          <button
+            type="button"
+            className="lightbox-close"
+            onClick={() => setLargePhoto('')}
+          >
+            ×
+          </button>
+
+          <img
+            src={largePhoto}
+            alt={point?.title || 'Foto bij melding'}
+            onMouseDown={(event) => event.stopPropagation()}
+          />
+        </div>
+      )}
+    </>
   )
 }
 
@@ -533,11 +554,12 @@ export default function App() {
   const [position, setPosition] = useState(null)
   const [editing, setEditing] = useState(null)
   const [error, setError] = useState('')
+  const [activeView, setActiveView] = useState('alle')
 
   const [filters, setFilters] = useState({
     search: '',
     category: 'alle',
-    status: 'actief',
+    status: 'alle',
     urgent: false,
   })
 
@@ -589,18 +611,18 @@ export default function App() {
 
   const stats = useMemo(
     () => ({
-      open: points.filter((p) => p.status === 'open').length,
+      open: points.filter((point) => point.status === 'open').length,
       handling: points.filter(
-        (p) => p.status === 'in_behandeling',
+        (point) => point.status === 'in_behandeling',
       ).length,
       urgent: points.filter(
-        (p) =>
-          p.urgent === 'ja' &&
-          p.status !== 'verwijderd',
+        (point) =>
+          point.urgent === 'ja' && point.status !== 'verwijderd',
       ).length,
       archived: points.filter(
-        (p) => p.status === 'verwijderd',
+        (point) => point.status === 'verwijderd',
       ).length,
+      total: points.length,
     }),
     [points],
   )
@@ -620,24 +642,63 @@ export default function App() {
         point.status === filters.status
 
       const urgencyOkay =
-        !filters.urgent || point.urgent === 'ja'
+        !filters.urgent ||
+        (point.urgent === 'ja' && point.status !== 'verwijderd')
 
       const searchOkay =
         !search ||
         `${point.title || ''} ${point.notes || ''} ${
           point.added_by || ''
-        }`
+        } ${point.category || ''}`
           .toLowerCase()
           .includes(search)
 
-      return (
-        categoryOkay &&
-        statusOkay &&
-        urgencyOkay &&
-        searchOkay
-      )
+      return categoryOkay && statusOkay && urgencyOkay && searchOkay
     })
   }, [points, filters])
+
+  function changeView(view) {
+    setActiveView(view)
+
+    const nextFilters = {
+      ...filters,
+      urgent: false,
+    }
+
+    if (view === 'open') {
+      nextFilters.status = 'open'
+    } else if (view === 'in_behandeling') {
+      nextFilters.status = 'in_behandeling'
+    } else if (view === 'urgent') {
+      nextFilters.status = 'actief'
+      nextFilters.urgent = true
+    } else if (view === 'verwijderd') {
+      nextFilters.status = 'verwijderd'
+    } else {
+      nextFilters.status = 'alle'
+    }
+
+    setFilters(nextFilters)
+  }
+
+  function changeFilters(nextFilters) {
+    setFilters(nextFilters)
+
+    if (nextFilters.status === 'open' && !nextFilters.urgent) {
+      setActiveView('open')
+    } else if (
+      nextFilters.status === 'in_behandeling' &&
+      !nextFilters.urgent
+    ) {
+      setActiveView('in_behandeling')
+    } else if (nextFilters.status === 'verwijderd') {
+      setActiveView('verwijderd')
+    } else if (nextFilters.urgent) {
+      setActiveView('urgent')
+    } else {
+      setActiveView('alle')
+    }
+  }
 
   async function save(form) {
     const payload = {
@@ -649,15 +710,11 @@ export default function App() {
       added_by: operatorName || 'onbekend',
       lat: position.lat,
       lng: position.lng,
-      photo_url:
-        form.photoUrl || editing?.photo_url || null,
+      photo_url: form.photoUrl || editing?.photo_url || null,
     }
 
     const query = editing
-      ? supabase
-          .from('points')
-          .update(payload)
-          .eq('id', editing.id)
+      ? supabase.from('points').update(payload).eq('id', editing.id)
       : supabase.from('points').insert(payload)
 
     const { error: saveError } = await query
@@ -681,9 +738,7 @@ export default function App() {
       .eq('id', editing.id)
 
     if (archiveError) {
-      window.alert(
-        `Verwijderen is mislukt: ${archiveError.message}`,
-      )
+      window.alert(`Verwijderen is mislukt: ${archiveError.message}`)
       return
     }
 
@@ -700,9 +755,7 @@ export default function App() {
       .eq('id', editing.id)
 
     if (restoreError) {
-      window.alert(
-        `Herstellen is mislukt: ${restoreError.message}`,
-      )
+      window.alert(`Herstellen is mislukt: ${restoreError.message}`)
       return
     }
 
@@ -736,155 +789,33 @@ export default function App() {
 
   if (!isAuthenticated || !operatorName) {
     return (
-      <AccessScreen
-        savedName={operatorName}
-        onAccess={grantAccess}
-      />
+      <AccessScreen savedName={operatorName} onAccess={grantAccess} />
     )
   }
 
   return (
     <div className="app">
-      <header>
-        <div>
-          <small>Airside Operations</small>
-          <h1>Vliegbasis Eindhoven</h1>
-        </div>
-        <div className="header-tools">
-          <div className={`live-status ${connectionStatus}`}>
-            <span />
-            {connectionStatus === 'live' ? 'Live' : 'Verbinden'}
-          </div>
-          <div className="operator-menu">
-            <strong>👤 {operatorName}</strong>
-            <button type="button" onClick={() => setEditingName(true)}>
-              Naam wijzigen
-            </button>
-            <button type="button" onClick={logout}>
-              Afmelden
-            </button>
-          </div>
-          <button className="refresh-button" onClick={load}>
-            ↻ Verversen
-          </button>
-        </div>
-      </header>
+      <Header
+        operatorName={operatorName}
+        connectionStatus={connectionStatus}
+        onRefresh={load}
+        onLogout={logout}
+        onChangeName={() => setEditingName(true)}
+      />
 
-      {error && (
-        <div className="error">
-          Databasefout: {error}
-        </div>
-      )}
+      {error && <div className="error">Databasefout: {error}</div>}
 
       <div className="layout">
-        <aside>
-          <h2>Dashboard</h2>
-
-          {[
-            ['Open', stats.open],
-            ['In behandeling', stats.handling],
-            ['Spoed', stats.urgent],
-            ['Verwijderde items', stats.archived],
-          ].map(([label, amount]) => (
-            <button
-              className="stat stat-button"
-              key={label}
-              onClick={() => {
-                if (label === 'Verwijderde items') {
-                  setFilters({
-                    ...filters,
-                    status: 'verwijderd',
-                  })
-                }
-              }}
-            >
-              <span>{label}</span>
-              <strong>{amount}</strong>
-            </button>
-          ))}
-
-          <h3>Filters</h3>
-
-          <label>
-            Zoeken
-            <input
-              value={filters.search}
-              onChange={(event) =>
-                setFilters({
-                  ...filters,
-                  search: event.target.value,
-                })
-              }
-            />
-          </label>
-
-          <label>
-            Categorie
-            <select
-              value={filters.category}
-              onChange={(event) =>
-                setFilters({
-                  ...filters,
-                  category: event.target.value,
-                })
-              }
-            >
-              <option value="alle">Alle</option>
-              <option value="schade">Schade</option>
-              <option value="afsluiting">Afsluiting</option>
-              <option value="werkzaamheden">
-                Werkzaamheden
-              </option>
-              <option value="overig">Overig</option>
-            </select>
-          </label>
-
-          <label>
-            Status
-            <select
-              value={filters.status}
-              onChange={(event) =>
-                setFilters({
-                  ...filters,
-                  status: event.target.value,
-                })
-              }
-            >
-              <option value="actief">
-                Actieve punten
-              </option>
-              <option value="open">Open</option>
-              <option value="in_behandeling">
-                In behandeling
-              </option>
-              <option value="verwijderd">
-                Verwijderde items
-              </option>
-              <option value="alle">Alles tonen</option>
-            </select>
-          </label>
-
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={filters.urgent}
-              onChange={(event) =>
-                setFilters({
-                  ...filters,
-                  urgent: event.target.checked,
-                })
-              }
-            />
-            Alleen spoed
-          </label>
-        </aside>
+        <Dashboard
+          stats={stats}
+          activeView={activeView}
+          filters={filters}
+          onViewChange={changeView}
+          onFiltersChange={changeFilters}
+        />
 
         <main>
-          <MapContainer
-            center={CENTER}
-            zoom={14}
-            className="map"
-          >
+          <MapContainer center={CENTER} zoom={14} className="map">
             <TileLayer
               attribution="&copy; OpenStreetMap-bijdragers"
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -903,14 +834,9 @@ export default function App() {
 
             <Polyline
               positions={RUNWAY}
-              pathOptions={{
-                color: '#3a3a3a',
-                weight: 10,
-              }}
+              pathOptions={{ color: '#3a3a3a', weight: 10 }}
             >
-              <Tooltip sticky>
-                Start- en landingsbaan 03/21
-              </Tooltip>
+              <Tooltip sticky>Start- en landingsbaan 03/21</Tooltip>
             </Polyline>
 
             <Polyline
@@ -925,27 +851,25 @@ export default function App() {
             {shown.map((point) => (
               <CircleMarker
                 key={point.id}
-                center={[
-                  Number(point.lat),
-                  Number(point.lng),
-                ]}
-                radius={9}
+                center={[Number(point.lat), Number(point.lng)]}
+                radius={point.urgent === 'ja' ? 11 : 9}
                 bubblingMouseEvents={false}
                 pathOptions={{
                   color:
                     point.status === 'verwijderd'
                       ? '#6b7280'
-                      : '#fff',
-                  weight: 2,
+                      : point.urgent === 'ja'
+                        ? '#ffddd8'
+                        : '#fff',
+                  weight: point.urgent === 'ja' ? 3 : 2,
                   fillColor:
                     point.status === 'verwijderd'
                       ? '#6b7280'
-                      : COLORS[point.category] ||
-                        COLORS.overig,
+                      : point.urgent === 'ja'
+                        ? '#dc2626'
+                        : COLORS[point.category] || COLORS.overig,
                   fillOpacity:
-                    point.status === 'verwijderd'
-                      ? 0.55
-                      : 0.95,
+                    point.status === 'verwijderd' ? 0.55 : 0.95,
                 }}
                 eventHandlers={{
                   click() {
@@ -963,9 +887,7 @@ export default function App() {
                   {point.status === 'verwijderd'
                     ? 'Verwijderd item'
                     : point.status}
-                  {point.urgent === 'ja'
-                    ? ' · SPOED'
-                    : ''}
+                  {point.urgent === 'ja' ? ' · SPOED' : ''}
                   {point.photo_url ? ' · FOTO' : ''}
                 </Tooltip>
               </CircleMarker>
@@ -986,10 +908,7 @@ export default function App() {
             <Clicker
               onClick={(latlng) => {
                 setEditing(null)
-                setPosition({
-                  lat: latlng.lat,
-                  lng: latlng.lng,
-                })
+                setPosition({ lat: latlng.lat, lng: latlng.lng })
               }}
             />
           </MapContainer>
