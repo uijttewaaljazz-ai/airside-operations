@@ -74,6 +74,31 @@ function Lightbox({ photos, index, onIndex, onClose }) {
   </div>
 }
 
+
+function getDeletedItemInfo(deletedAt) {
+  if (!deletedAt) return null
+
+  const deletedDate = new Date(deletedAt)
+  if (Number.isNaN(deletedDate.getTime())) return null
+
+  const expiresAt = new Date(deletedDate)
+  expiresAt.setDate(expiresAt.getDate() + 31)
+
+  const millisecondsPerDay = 1000 * 60 * 60 * 24
+  const daysRemaining = Math.max(
+    0,
+    Math.ceil((expiresAt.getTime() - Date.now()) / millisecondsPerDay),
+  )
+
+  return {
+    formattedDate: new Intl.DateTimeFormat('nl-NL', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+    }).format(deletedDate),
+    daysRemaining,
+  }
+}
+
 function IncidentModal({ position, point, operatorName, onClose, onSave, onArchive, onRestore }) {
   const [form, setForm] = useState({ title: '', category: 'schade', urgent: 'nee', status: 'open', notes: '' })
   const [existingPhotos, setExistingPhotos] = useState([])
@@ -90,6 +115,7 @@ function IncidentModal({ position, point, operatorName, onClose, onSave, onArchi
   useEffect(() => () => previews.forEach(url => URL.revokeObjectURL(url)), [previews])
   if (!position) return null
   const archived = point?.status === 'verwijderd'
+  const deletedItemInfo = archived ? getDeletedItemInfo(point?.deleted_at) : null
   const allPhotos = [...existingPhotos, ...previews]
 
   function choosePhotos(event) {
@@ -142,6 +168,7 @@ function IncidentModal({ position, point, operatorName, onClose, onSave, onArchi
     <div className="overlay" onMouseDown={uploading ? undefined : onClose}><form className="modal" onSubmit={submit} onMouseDown={e => e.stopPropagation()}>
       <div className="modal-head"><div><span>{point ? archived ? 'Verwijderd item' : 'Melding bewerken' : 'Nieuwe melding'}</span><h2>{point?.title || 'Punt toevoegen'}</h2></div><button type="button" onClick={onClose}>×</button></div>
       <p className="coords">{position.lat.toFixed(5)}, {position.lng.toFixed(5)}</p>
+      {archived && deletedItemInfo && <div style={{ margin: '0 0 16px', padding: '12px 14px', border: '1px solid #d7dee8', borderRadius: '9px', background: '#f7f9fc', color: '#374151' }}><strong style={{ display: 'block', marginBottom: '5px' }}>Verwijderd op</strong><span>{deletedItemInfo.formattedDate}</span><span style={{ display: 'block', marginTop: '8px', fontWeight: 700, color: '#9a4a32' }}>{deletedItemInfo.daysRemaining === 0 ? 'Wordt bij de volgende dagelijkse opruiming definitief verwijderd.' : `Nog ${deletedItemInfo.daysRemaining} ${deletedItemInfo.daysRemaining === 1 ? 'dag' : 'dagen'} tot definitieve verwijdering.`}</span></div>}
       <label>Naam<input name="title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} disabled={uploading || archived} autoFocus /></label>
       <div className="cols"><label>Categorie<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} disabled={uploading || archived}><option value="schade">Schade</option><option value="afsluiting">Afsluiting</option><option value="werkzaamheden">Werkzaamheden</option><option value="overig">Overig</option></select></label>
       <label>Status<select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} disabled={uploading || archived}><option value="open">Open</option><option value="in_behandeling">In behandeling</option></select></label></div>
