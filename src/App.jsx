@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { supabase } from './services/supabase.js'
 import Header from './components/Header.jsx'
@@ -11,28 +11,6 @@ const APP_USERNAME = 'airside'
 const APP_PASSWORD = 'Airside2026!'
 const SESSION_KEY = 'airside_shared_session'
 const OPERATOR_KEY = 'airside_operator_name'
-const SESSION_COOKIE = 'airside_trusted_device'
-
-function hasRememberedSession() {
-  const localSession = localStorage.getItem(SESSION_KEY) === 'yes'
-  const cookieSession = document.cookie
-    .split('; ')
-    .some(cookie => cookie === `${SESSION_COOKIE}=yes`)
-
-  return localSession || cookieSession
-}
-
-function rememberSession(name) {
-  localStorage.setItem(SESSION_KEY, 'yes')
-  localStorage.setItem(OPERATOR_KEY, name)
-  document.cookie = `${SESSION_COOKIE}=yes; Max-Age=31536000; Path=/; SameSite=Lax; Secure`
-}
-
-function forgetSession() {
-  localStorage.removeItem(SESSION_KEY)
-  localStorage.removeItem(OPERATOR_KEY)
-  document.cookie = `${SESSION_COOKIE}=; Max-Age=0; Path=/; SameSite=Lax; Secure`
-}
 
 function AccessScreen({ savedName, onAccess }) {
   const [step, setStep] = useState('login')
@@ -76,14 +54,217 @@ function AccessScreen({ savedName, onAccess }) {
   </section></main>
 }
 
+function NameDialog({ currentName, onSave, onClose }) {
+  const [name, setName] = useState(currentName)
+  return <div className="overlay" onMouseDown={onClose}><form className="name-dialog" onSubmit={e => { e.preventDefault(); const n = name.trim(); if (n.length < 2) return alert('Vul een geldige naam in.'); onSave(n) }} onMouseDown={e => e.stopPropagation()}>
+    <h2>Naam wijzigen</h2><p>Nieuwe meldingen worden voortaan onder deze naam opgeslagen.</p>
+    <label>Naam<input value={name} onChange={e => setName(e.target.value)} autoFocus /></label>
+    <div className="name-actions"><button type="button" onClick={onClose}>Annuleren</button><button className="primary">Opslaan</button></div>
+  </form></div>
+}
+
 function Lightbox({ photos, index, onIndex, onClose }) {
+  const [scale, setScale] = useState(1)
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const gestureRef = useRef({
+    mode: null,
+    startX: 0,
+    startY: 0,
+    startOffsetX: 0,
+    startOffsetY: 0,
+    startDistance: 0,
+    startScale: 1,
+    moved: false,
+  })
+
+  useEffect(() => {
+    setScale(1)
+    setOffset({ x: 0, y: 0 })
+  }, [index])
+
   if (!photos.length) return null
+
+  function previousPhoto() {
+    onIndex((index - 1 + photos.length) % photos.length)
+  }
+
+  function nextPhoto() {
+    onIndex((index + 1) % photos.length)
+  }
+
+  function distance(touchA, touchB) {
+    return Math.hypot(
+      touchA.clientX - touchB.clientX,
+      touchA.clientY - touchB.clientY,
+    )
+  }
+
+  function touchStart(event) {
+    event.stopPropagation()
+    const touches = event.touches
+
+    if (touches.length === 2) {
+      gestureRef.current = {
+        ...gestureRef.current,
+        mode: 'pinch',
+        startDistance: distance(touches[0], touches[1]),
+        startScale: scale,
+        moved: false,
+      }
+      return
+    }
+
+    if (touches.length === 1) {
+      gestureRef.current = {
+        ...gestureRef.current,
+        mode: scale > 1 ? 'pan' : 'swipe',
+        startX: touches[0].clientX,
+        startY: touches[0].clientY,
+        startOffsetX: offset.x,
+        startOffsetY: offset.y,
+        moved: false,
+      }
+    }
+  }
+
+  function touchMove(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    const touches = event.touches
+    const gesture = gestureRef.current
+
+    if (gesture.mode === 'pinch' && touches.length === 2) {
+      const nextScale = Math.min(
+        4,
+        Math.max(
+          1,
+          gesture.startScale *
+            (distance(touches[0], touches[1]) / gesture.startDistance),
+        ),
+      )
+      gesture.moved = true
+      setScale(nextScale)
+      if (nextScale === 1) setOffset({ x: 0, y: 0 })
+      return
+    }
+
+    if (touches.length !== 1) return
+
+    const deltaX = touches[0].clientX - gesture.startX
+    const deltaY = touches[0].clientY - gesture.startY
+
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+      gesture.moved = true
+    }
+
+    if (gesture.mode === 'pan') {
+      setOffset({
+        x: gesture.startOffsetX + deltaX,
+        y: gesture.startOffsetY + deltaY,
+      })
+    }
+  }
+
+  function touchEnd(event) {
+    event.stopPropagation()
+    const gesture = gestureRef.current
+
+    if (gesture.mode === 'swipe' && event.changedTouches.length === 1) {
+      const deltaX = event.changedTouches[0].clientX - gesture.startX
+      const deltaY = event.changedTouches[0].clientY - gesture.startY
+
+      if (Math.abs(deltaX) > 55 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX < 0) nextPhoto()
+        else previousPhoto()
+      }
+    }
+
+    if (scale <= 1.02) {
+      setScale(1)
+      setOffset({ x: 0, y: 0 })
+    }
+
+    gestureRef.current.mode = null
+  }
+
+  function resetZoom() {
+    setScale(1)
+    setOffset({ x: 0, y: 0 })
+  }
+
   return <div className="lightbox" onMouseDown={onClose}>
     <button className="lightbox-close" onClick={onClose}>×</button>
-    {photos.length > 1 && <button className="lightbox-nav prev" onClick={e => { e.stopPropagation(); onIndex((index - 1 + photos.length) % photos.length) }}>‹</button>}
-    <img src={photos[index]} alt={`Foto ${index + 1}`} onMouseDown={e => e.stopPropagation()} />
-    {photos.length > 1 && <button className="lightbox-nav next" onClick={e => { e.stopPropagation(); onIndex((index + 1) % photos.length) }}>›</button>}
+    {photos.length > 1 && <button className="lightbox-nav prev" onClick={event => { event.stopPropagation(); previousPhoto() }}>‹</button>}
+    <div
+      onMouseDown={event => event.stopPropagation()}
+      onTouchStart={touchStart}
+      onTouchMove={touchMove}
+      onTouchEnd={touchEnd}
+      onTouchCancel={touchEnd}
+      onDoubleClick={resetZoom}
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'grid',
+        placeItems: 'center',
+        overflow: 'hidden',
+        touchAction: 'none',
+      }}
+    >
+      <img
+        src={photos[index]}
+        alt={`Foto ${index + 1}`}
+        draggable="false"
+        style={{
+          maxWidth: '95vw',
+          maxHeight: '88vh',
+          transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${scale})`,
+          transformOrigin: 'center center',
+          transition: gestureRef.current.mode ? 'none' : 'transform 160ms ease',
+          userSelect: 'none',
+          WebkitUserDrag: 'none',
+          cursor: scale > 1 ? 'grab' : 'default',
+        }}
+      />
+    </div>
+    {photos.length > 1 && <button className="lightbox-nav next" onClick={event => { event.stopPropagation(); nextPhoto() }}>›</button>}
     <div className="lightbox-count">{index + 1} / {photos.length}</div>
+    {photos.length > 1 && (
+      <div
+        aria-label="Foto-overzicht"
+        style={{
+          position: 'fixed',
+          left: '50%',
+          bottom: '22px',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '8px',
+          zIndex: 3002,
+        }}
+      >
+        {photos.map((_, photoIndex) => (
+          <button
+            key={photoIndex}
+            type="button"
+            aria-label={`Open foto ${photoIndex + 1}`}
+            onClick={event => {
+              event.stopPropagation()
+              onIndex(photoIndex)
+            }}
+            style={{
+              width: photoIndex === index ? '22px' : '9px',
+              height: '9px',
+              padding: 0,
+              border: 0,
+              borderRadius: '999px',
+              background: photoIndex === index ? '#55b1a9' : 'rgba(255,255,255,.55)',
+              cursor: 'pointer',
+              transition: 'width 160ms ease, background 160ms ease',
+            }}
+          />
+        ))}
+      </div>
+    )}
   </div>
 }
 
@@ -196,8 +377,9 @@ function IncidentModal({ position, point, operatorName, onClose, onSave, onArchi
 }
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(hasRememberedSession)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem(SESSION_KEY) === 'yes')
   const [operatorName, setOperatorName] = useState(() => localStorage.getItem(OPERATOR_KEY) || '')
+  const [editingName, setEditingName] = useState(false)
   const [position, setPosition] = useState(null)
   const [editing, setEditing] = useState(null)
   const [focusPoint, setFocusPoint] = useState(null)
@@ -252,15 +434,16 @@ export default function App() {
     await load()
   }
 
-  if (!isAuthenticated || !operatorName) return <AccessScreen savedName={operatorName} onAccess={name => { rememberSession(name); setOperatorName(name); setIsAuthenticated(true) }} />
+  if (!isAuthenticated || !operatorName) return <AccessScreen savedName={operatorName} onAccess={name => { localStorage.setItem(SESSION_KEY, 'yes'); localStorage.setItem(OPERATOR_KEY, name); setOperatorName(name); setIsAuthenticated(true) }} />
 
   return <div className="app">
-    <Header operatorName={operatorName} connectionStatus={connectionStatus} onRefresh={load} onLogout={() => { forgetSession(); setOperatorName(''); setIsAuthenticated(false); closeModal() }} />
+    <Header operatorName={operatorName} connectionStatus={connectionStatus} onRefresh={load} onChangeName={() => setEditingName(true)} onLogout={() => { localStorage.removeItem(SESSION_KEY); setIsAuthenticated(false); closeModal() }} />
     {error && <div className="error">Databasefout: {error}</div>}
     <div className="layout">
       <Dashboard points={points} view={view} setView={setView} filters={filters} setFilters={setFilters} onOpenPoint={openPoint} />
       <MapView points={shown} position={position} editing={editing} focusPoint={focusPoint} onOpenPoint={openPoint} onCreatePoint={latlng => { setEditing(null); setFocusPoint(null); setPosition({ lat: latlng.lat, lng: latlng.lng }) }} />
     </div>
     <IncidentModal position={position} point={editing} operatorName={operatorName} onClose={closeModal} onSave={save} onArchive={archivePoint} onRestore={restorePoint} />
+    {editingName && <NameDialog currentName={operatorName} onClose={() => setEditingName(false)} onSave={name => { localStorage.setItem(OPERATOR_KEY, name); setOperatorName(name); setEditingName(false) }} />}
   </div>
 }
