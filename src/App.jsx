@@ -11,6 +11,28 @@ const APP_USERNAME = 'airside'
 const APP_PASSWORD = 'Airside2026!'
 const SESSION_KEY = 'airside_shared_session'
 const OPERATOR_KEY = 'airside_operator_name'
+const SESSION_COOKIE = 'airside_trusted_device'
+
+function hasRememberedSession() {
+  const localSession = localStorage.getItem(SESSION_KEY) === 'yes'
+  const cookieSession = document.cookie
+    .split('; ')
+    .some(cookie => cookie === `${SESSION_COOKIE}=yes`)
+
+  return localSession || cookieSession
+}
+
+function rememberSession(name) {
+  localStorage.setItem(SESSION_KEY, 'yes')
+  localStorage.setItem(OPERATOR_KEY, name)
+  document.cookie = `${SESSION_COOKIE}=yes; Max-Age=31536000; Path=/; SameSite=Lax; Secure`
+}
+
+function forgetSession() {
+  localStorage.removeItem(SESSION_KEY)
+  localStorage.removeItem(OPERATOR_KEY)
+  document.cookie = `${SESSION_COOKIE}=; Max-Age=0; Path=/; SameSite=Lax; Secure`
+}
 
 function AccessScreen({ savedName, onAccess }) {
   const [step, setStep] = useState('login')
@@ -52,15 +74,6 @@ function AccessScreen({ savedName, onAccess }) {
       <button className="access-primary" type="submit">Naam opslaan en doorgaan</button>
     </form>}
   </section></main>
-}
-
-function NameDialog({ currentName, onSave, onClose }) {
-  const [name, setName] = useState(currentName)
-  return <div className="overlay" onMouseDown={onClose}><form className="name-dialog" onSubmit={e => { e.preventDefault(); const n = name.trim(); if (n.length < 2) return alert('Vul een geldige naam in.'); onSave(n) }} onMouseDown={e => e.stopPropagation()}>
-    <h2>Naam wijzigen</h2><p>Nieuwe meldingen worden voortaan onder deze naam opgeslagen.</p>
-    <label>Naam<input value={name} onChange={e => setName(e.target.value)} autoFocus /></label>
-    <div className="name-actions"><button type="button" onClick={onClose}>Annuleren</button><button className="primary">Opslaan</button></div>
-  </form></div>
 }
 
 function Lightbox({ photos, index, onIndex, onClose }) {
@@ -183,9 +196,8 @@ function IncidentModal({ position, point, operatorName, onClose, onSave, onArchi
 }
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem(SESSION_KEY) === 'yes')
+  const [isAuthenticated, setIsAuthenticated] = useState(hasRememberedSession)
   const [operatorName, setOperatorName] = useState(() => localStorage.getItem(OPERATOR_KEY) || '')
-  const [editingName, setEditingName] = useState(false)
   const [position, setPosition] = useState(null)
   const [editing, setEditing] = useState(null)
   const [focusPoint, setFocusPoint] = useState(null)
@@ -240,16 +252,15 @@ export default function App() {
     await load()
   }
 
-  if (!isAuthenticated || !operatorName) return <AccessScreen savedName={operatorName} onAccess={name => { localStorage.setItem(SESSION_KEY, 'yes'); localStorage.setItem(OPERATOR_KEY, name); setOperatorName(name); setIsAuthenticated(true) }} />
+  if (!isAuthenticated || !operatorName) return <AccessScreen savedName={operatorName} onAccess={name => { rememberSession(name); setOperatorName(name); setIsAuthenticated(true) }} />
 
   return <div className="app">
-    <Header operatorName={operatorName} connectionStatus={connectionStatus} onRefresh={load} onChangeName={() => setEditingName(true)} onLogout={() => { localStorage.removeItem(SESSION_KEY); setIsAuthenticated(false); closeModal() }} />
+    <Header operatorName={operatorName} connectionStatus={connectionStatus} onRefresh={load} onLogout={() => { forgetSession(); setOperatorName(''); setIsAuthenticated(false); closeModal() }} />
     {error && <div className="error">Databasefout: {error}</div>}
     <div className="layout">
       <Dashboard points={points} view={view} setView={setView} filters={filters} setFilters={setFilters} onOpenPoint={openPoint} />
       <MapView points={shown} position={position} editing={editing} focusPoint={focusPoint} onOpenPoint={openPoint} onCreatePoint={latlng => { setEditing(null); setFocusPoint(null); setPosition({ lat: latlng.lat, lng: latlng.lng }) }} />
     </div>
     <IncidentModal position={position} point={editing} operatorName={operatorName} onClose={closeModal} onSave={save} onArchive={archivePoint} onRestore={restorePoint} />
-    {editingName && <NameDialog currentName={operatorName} onClose={() => setEditingName(false)} onSave={name => { localStorage.setItem(OPERATOR_KEY, name); setOperatorName(name); setEditingName(false) }} />}
   </div>
 }
