@@ -74,7 +74,7 @@ function Lightbox({ photos, index, onIndex, onClose }) {
     startOffsetY: 0,
     startDistance: 0,
     startScale: 1,
-    pointerId: null,
+    moved: false,
   })
 
   useEffect(() => {
@@ -90,11 +90,6 @@ function Lightbox({ photos, index, onIndex, onClose }) {
 
   function nextPhoto() {
     onIndex((index + 1) % photos.length)
-  }
-
-  function resetZoom() {
-    setScale(1)
-    setOffset({ x: 0, y: 0 })
   }
 
   function distance(touchA, touchB) {
@@ -114,6 +109,7 @@ function Lightbox({ photos, index, onIndex, onClose }) {
         mode: 'pinch',
         startDistance: distance(touches[0], touches[1]),
         startScale: scale,
+        moved: false,
       }
       return
     }
@@ -126,6 +122,7 @@ function Lightbox({ photos, index, onIndex, onClose }) {
         startY: touches[0].clientY,
         startOffsetX: offset.x,
         startOffsetY: offset.y,
+        moved: false,
       }
     }
   }
@@ -145,6 +142,7 @@ function Lightbox({ photos, index, onIndex, onClose }) {
             (distance(touches[0], touches[1]) / gesture.startDistance),
         ),
       )
+      gesture.moved = true
       setScale(nextScale)
       if (nextScale === 1) setOffset({ x: 0, y: 0 })
       return
@@ -154,6 +152,10 @@ function Lightbox({ photos, index, onIndex, onClose }) {
 
     const deltaX = touches[0].clientX - gesture.startX
     const deltaY = touches[0].clientY - gesture.startY
+
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+      gesture.moved = true
+    }
 
     if (gesture.mode === 'pan') {
       setOffset({
@@ -171,112 +173,34 @@ function Lightbox({ photos, index, onIndex, onClose }) {
       const deltaX = event.changedTouches[0].clientX - gesture.startX
       const deltaY = event.changedTouches[0].clientY - gesture.startY
 
-      if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      if (Math.abs(deltaX) > 55 && Math.abs(deltaX) > Math.abs(deltaY)) {
         if (deltaX < 0) nextPhoto()
         else previousPhoto()
       }
     }
 
-    if (scale <= 1.02) resetZoom()
-    gestureRef.current.mode = null
-  }
-
-  function pointerDown(event) {
-    if (event.pointerType !== 'mouse' || event.button !== 0) return
-    event.preventDefault()
-    event.stopPropagation()
-
-    gestureRef.current = {
-      ...gestureRef.current,
-      mode: scale > 1 ? 'pan' : 'swipe',
-      startX: event.clientX,
-      startY: event.clientY,
-      startOffsetX: offset.x,
-      startOffsetY: offset.y,
-      pointerId: event.pointerId,
-    }
-
-    event.currentTarget.setPointerCapture?.(event.pointerId)
-  }
-
-  function pointerMove(event) {
-    const gesture = gestureRef.current
-    if (event.pointerType !== 'mouse' || gesture.pointerId !== event.pointerId) return
-    if (gesture.mode !== 'pan') return
-
-    event.preventDefault()
-    setOffset({
-      x: gesture.startOffsetX + (event.clientX - gesture.startX),
-      y: gesture.startOffsetY + (event.clientY - gesture.startY),
-    })
-  }
-
-  function pointerUp(event) {
-    const gesture = gestureRef.current
-    if (event.pointerType !== 'mouse' || gesture.pointerId !== event.pointerId) return
-
-    event.preventDefault()
-    event.stopPropagation()
-
-    if (gesture.mode === 'swipe') {
-      const deltaX = event.clientX - gesture.startX
-      const deltaY = event.clientY - gesture.startY
-
-      if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY)) {
-        if (deltaX < 0) nextPhoto()
-        else previousPhoto()
-      }
+    if (scale <= 1.02) {
+      setScale(1)
+      setOffset({ x: 0, y: 0 })
     }
 
     gestureRef.current.mode = null
-    gestureRef.current.pointerId = null
-    event.currentTarget.releasePointerCapture?.(event.pointerId)
   }
 
-  function wheelZoom(event) {
-    event.preventDefault()
-    event.stopPropagation()
-
-    const direction = event.deltaY < 0 ? 0.2 : -0.2
-    const nextScale = Math.min(4, Math.max(1, scale + direction))
-    setScale(nextScale)
-    if (nextScale === 1) setOffset({ x: 0, y: 0 })
+  function resetZoom() {
+    setScale(1)
+    setOffset({ x: 0, y: 0 })
   }
 
-  function stopMouseDown(event) {
-    event.stopPropagation()
-  }
-
-  return <div className="lightbox" onMouseDown={event => {
-    if (event.target === event.currentTarget) onClose()
-  }}>
-    <button
-      type="button"
-      className="lightbox-close"
-      onMouseDown={stopMouseDown}
-      onTouchStart={event => event.stopPropagation()}
-      onClick={event => { event.stopPropagation(); onClose() }}
-    >×</button>
-
-    {photos.length > 1 && <button
-      type="button"
-      className="lightbox-nav prev"
-      onMouseDown={stopMouseDown}
-      onTouchStart={event => event.stopPropagation()}
-      onClick={event => { event.stopPropagation(); previousPhoto() }}
-    >‹</button>}
-
+  return <div className="lightbox" onMouseDown={onClose}>
+    <button className="lightbox-close" onClick={onClose}>×</button>
+    {photos.length > 1 && <button type="button" className="lightbox-nav prev" onMouseDown={event => event.stopPropagation()} onTouchStart={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); previousPhoto() }}>‹</button>}
     <div
       onMouseDown={event => event.stopPropagation()}
       onTouchStart={touchStart}
       onTouchMove={touchMove}
       onTouchEnd={touchEnd}
       onTouchCancel={touchEnd}
-      onPointerDown={pointerDown}
-      onPointerMove={pointerMove}
-      onPointerUp={pointerUp}
-      onPointerCancel={pointerUp}
-      onWheel={wheelZoom}
       onDoubleClick={resetZoom}
       style={{
         width: '100%',
@@ -299,26 +223,15 @@ function Lightbox({ photos, index, onIndex, onClose }) {
           transition: gestureRef.current.mode ? 'none' : 'transform 160ms ease',
           userSelect: 'none',
           WebkitUserDrag: 'none',
-          cursor: scale > 1 ? 'grab' : 'ew-resize',
+          cursor: scale > 1 ? 'grab' : 'default',
         }}
       />
     </div>
-
-    {photos.length > 1 && <button
-      type="button"
-      className="lightbox-nav next"
-      onMouseDown={stopMouseDown}
-      onTouchStart={event => event.stopPropagation()}
-      onClick={event => { event.stopPropagation(); nextPhoto() }}
-    >›</button>}
-
+    {photos.length > 1 && <button type="button" className="lightbox-nav next" onMouseDown={event => event.stopPropagation()} onTouchStart={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); nextPhoto() }}>›</button>}
     <div className="lightbox-count">{index + 1} / {photos.length}</div>
-
     {photos.length > 1 && (
       <div
         aria-label="Foto-overzicht"
-        onMouseDown={event => event.stopPropagation()}
-        onTouchStart={event => event.stopPropagation()}
         style={{
           position: 'fixed',
           left: '50%',
@@ -334,8 +247,6 @@ function Lightbox({ photos, index, onIndex, onClose }) {
             key={photoIndex}
             type="button"
             aria-label={`Open foto ${photoIndex + 1}`}
-            onMouseDown={stopMouseDown}
-            onTouchStart={event => event.stopPropagation()}
             onClick={event => {
               event.stopPropagation()
               onIndex(photoIndex)
@@ -356,6 +267,7 @@ function Lightbox({ photos, index, onIndex, onClose }) {
     )}
   </div>
 }
+
 
 function getDeletedItemInfo(deletedAt) {
   if (!deletedAt) return null
