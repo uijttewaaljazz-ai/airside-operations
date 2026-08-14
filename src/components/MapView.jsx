@@ -19,16 +19,12 @@ function afsluitingIcon(isSelected, isUrgent) {
         display:flex;
         align-items:center;
         justify-content:center;
-        border-radius:50%;
-        background:#f59e0b;
-        border:${border}px solid #fff;
-        box-sizing:border-box;
-        box-shadow:${isSelected ? '0 0 0 2px rgba(53,165,156,.45)' : '0 1px 4px rgba(0,0,0,.28)'};
+        filter:${isSelected ? 'drop-shadow(0 0 3px rgba(53,165,156,.9))' : 'drop-shadow(0 1px 2px rgba(0,0,0,.45))'};
       ">
-        <svg width="${size - 8}" height="${size - 8}" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 7h16v6H4z" fill="#fff"/>
-          <path d="M5 8l3 4M10 8l3 4M15 8l3 4" stroke="#f59e0b" stroke-width="2"/>
-          <path d="M7 13v5M17 13v5M5 18h4M15 18h4" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        <svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 7h16v6H4z" fill="#f59e0b" stroke="#fff" stroke-width="${border}"/>
+          <path d="M5 8l3 4M10 8l3 4M15 8l3 4" stroke="#fff" stroke-width="2"/>
+          <path d="M7 13v5M17 13v5M5 18h4M15 18h4" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/>
         </svg>
       </div>
     `,
