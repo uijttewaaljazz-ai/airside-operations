@@ -293,8 +293,17 @@ function getDeletedItemInfo(deletedAt) {
   }
 }
 
+function toDateTimeLocalValue(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+
+  const pad = number => String(number).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 function IncidentModal({ position, point, operatorName, onClose, onSave, onArchive, onRestore }) {
-  const [form, setForm] = useState({ title: '', category: 'schade', urgent: 'nee', status: 'open', notes: '' })
+  const [form, setForm] = useState({ title: '', category: 'schade', urgent: 'nee', status: 'open', notes: '', closure_until: '' })
   const [existingPhotos, setExistingPhotos] = useState([])
   const [newFiles, setNewFiles] = useState([])
   const [previews, setPreviews] = useState([])
@@ -302,7 +311,7 @@ function IncidentModal({ position, point, operatorName, onClose, onSave, onArchi
   const [lightboxIndex, setLightboxIndex] = useState(null)
 
   useEffect(() => {
-    setForm({ title: point?.title || '', category: point?.category || 'schade', urgent: point?.urgent || 'nee', status: point?.status === 'verwijderd' ? 'open' : point?.status || 'open', notes: point?.notes || '' })
+    setForm({ title: point?.title || '', category: point?.category || 'schade', urgent: point?.urgent || 'nee', status: point?.status === 'verwijderd' ? 'open' : point?.status || 'open', notes: point?.notes || '', closure_until: toDateTimeLocalValue(point?.closure_until) })
     setExistingPhotos(normalizePhotos(point)); setNewFiles([]); setPreviews([]); setLightboxIndex(null)
   }, [point, position])
 
@@ -362,11 +371,13 @@ function IncidentModal({ position, point, operatorName, onClose, onSave, onArchi
     <div className="overlay" onMouseDown={uploading ? undefined : onClose}><form className="modal" onSubmit={submit} onMouseDown={e => e.stopPropagation()}>
       <div className="modal-head"><div><span>{point ? archived ? 'Verwijderde melding' : 'Melding bewerken' : 'Nieuwe melding'}</span><h2>{point?.title || 'Melding toevoegen'}</h2></div><button type="button" onClick={onClose}>×</button></div>
       {point?.created_at && <p style={{ margin: '4px 0 2px', color: '#6b7280', fontSize: '13px' }}>Geplaatst op: {new Intl.DateTimeFormat('nl-NL', { dateStyle: 'long' }).format(new Date(point.created_at))}</p>}
+      {point?.category === 'afsluiting' && point?.closure_until && <p style={{ margin: '2px 0 2px', color: '#6b7280', fontSize: '13px' }}>Afsluiting tot: {new Intl.DateTimeFormat('nl-NL', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(point.closure_until))}</p>}
       <p className="coords">{position.lat.toFixed(5)}, {position.lng.toFixed(5)}</p>
       {archived && deletedItemInfo && <div style={{ margin: '0 0 16px', padding: '12px 14px', border: '1px solid #d7dee8', borderRadius: '9px', background: '#f7f9fc', color: '#374151' }}><strong style={{ display: 'block', marginBottom: '5px' }}>Verwijderd op</strong><span>{deletedItemInfo.formattedDate}</span><span style={{ display: 'block', marginTop: '8px', fontWeight: 700, color: '#9a4a32' }}>{deletedItemInfo.daysRemaining === 0 ? 'Wordt bij de volgende dagelijkse opruiming definitief verwijderd.' : `Nog ${deletedItemInfo.daysRemaining} ${deletedItemInfo.daysRemaining === 1 ? 'dag' : 'dagen'} tot definitieve verwijdering.`}</span></div>}
       <label>Naam<input name="title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} disabled={uploading || archived} autoFocus /></label>
       <div className="cols"><label>Categorie<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} disabled={uploading || archived}><option value="schade">Schade</option><option value="afsluiting">Afsluiting</option><option value="werkzaamheden">Werkzaamheden</option><option value="overig">Overig</option></select></label>
       <label>Status<select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} disabled={uploading || archived}><option value="open">Open</option><option value="in_behandeling">In behandeling</option></select></label></div>
+      {form.category === 'afsluiting' && <label>Afsluiting tot<input type="datetime-local" value={form.closure_until} onChange={e => setForm({ ...form, closure_until: e.target.value })} disabled={uploading || archived} required /></label>}
       <div className="cols"><label>Spoed<select value={form.urgent} onChange={e => setForm({ ...form, urgent: e.target.value })} disabled={uploading || archived}><option value="nee">Nee</option><option value="ja">Ja</option></select></label><div className="operator-readonly"><span>Operator</span><strong>👤 {operatorName}</strong></div></div>
       <label>Omschrijving<textarea rows="4" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} disabled={uploading || archived} /></label>
       {!archived && <label className="photo-upload">Foto's toevoegen<input type="file" accept="image/*" multiple onChange={choosePhotos} disabled={uploading} /><small>Je kunt meerdere foto's tegelijk kiezen. Maximaal 10 MB per foto.</small></label>}
@@ -417,7 +428,7 @@ export default function App() {
   }
 
   async function save(form) {
-    const payload = { title: form.title, category: form.category, urgent: form.urgent, status: form.status, notes: form.notes, added_by: operatorName || 'onbekend', lat: position.lat, lng: position.lng, photo_urls: form.photoUrls, photo_url: form.photoUrls[0] || null }
+    const payload = { title: form.title, category: form.category, urgent: form.urgent, status: form.status, notes: form.notes, closure_until: form.category === 'afsluiting' && form.closure_until ? new Date(form.closure_until).toISOString() : null, added_by: operatorName || 'onbekend', lat: position.lat, lng: position.lng, photo_urls: form.photoUrls, photo_url: form.photoUrls[0] || null }
     const query = editing ? supabase.from('points').update(payload).eq('id', editing.id) : supabase.from('points').insert(payload)
     const { error: saveError } = await query
     if (saveError) throw saveError
