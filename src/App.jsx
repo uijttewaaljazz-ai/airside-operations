@@ -390,7 +390,14 @@ export default function App() {
   const shown = useMemo(() => {
     const search = filters.search.toLowerCase().trim()
     return points.filter(point => {
-      const viewOkay = view === 'open' ? point.status === 'open' : view === 'in_behandeling' ? point.status === 'in_behandeling' : view === 'urgent' ? point.urgent === 'ja' && point.status !== 'verwijderd' : view === 'verwijderd' ? point.status === 'verwijderd' : true
+      const viewOkay =
+        view === 'open' ? point.status === 'open' :
+        view === 'in_behandeling' ? point.status === 'in_behandeling' :
+        view === 'urgent' ? point.urgent === 'ja' && point.status !== 'verwijderd' :
+        view === 'verwijderd' ? point.status === 'verwijderd' :
+        view === 'alle' && (filters.category === 'schade' || filters.category === 'afsluiting')
+          ? point.status !== 'verwijderd' :
+        true
       const categoryOkay = filters.category === 'alle' || point.category === filters.category
       const searchOkay = !search || `${point.title || ''} ${point.notes || ''} ${point.added_by || ''}`.toLowerCase().includes(search)
       return viewOkay && categoryOkay && searchOkay
