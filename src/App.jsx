@@ -293,17 +293,20 @@ function getDeletedItemInfo(deletedAt) {
   }
 }
 
-function toDateTimeLocalValue(value) {
-  if (!value) return ''
+function toClosureDateTimeParts(value) {
+  if (!value) return { closure_date: '', closure_time: '' }
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
+  if (Number.isNaN(date.getTime())) return { closure_date: '', closure_time: '' }
 
   const pad = number => String(number).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  return {
+    closure_date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    closure_time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+  }
 }
 
 function IncidentModal({ position, point, operatorName, onClose, onSave, onArchive, onRestore }) {
-  const [form, setForm] = useState({ title: '', category: 'schade', urgent: 'nee', status: 'open', notes: '', closure_until: '' })
+  const [form, setForm] = useState({ title: '', category: 'schade', urgent: 'nee', status: 'open', notes: '', closure_date: '', closure_time: '' })
   const [existingPhotos, setExistingPhotos] = useState([])
   const [newFiles, setNewFiles] = useState([])
   const [previews, setPreviews] = useState([])
@@ -311,7 +314,8 @@ function IncidentModal({ position, point, operatorName, onClose, onSave, onArchi
   const [lightboxIndex, setLightboxIndex] = useState(null)
 
   useEffect(() => {
-    setForm({ title: point?.title || '', category: point?.category || 'schade', urgent: point?.urgent || 'nee', status: point?.status === 'verwijderd' ? 'open' : point?.status || 'open', notes: point?.notes || '', closure_until: toDateTimeLocalValue(point?.closure_until) })
+    const closureParts = toClosureDateTimeParts(point?.closure_until)
+    setForm({ title: point?.title || '', category: point?.category || 'schade', urgent: point?.urgent || 'nee', status: point?.status === 'verwijderd' ? 'open' : point?.status || 'open', notes: point?.notes || '', ...closureParts })
     setExistingPhotos(normalizePhotos(point)); setNewFiles([]); setPreviews([]); setLightboxIndex(null)
   }, [point, position])
 
@@ -377,7 +381,7 @@ function IncidentModal({ position, point, operatorName, onClose, onSave, onArchi
       <label>Naam<input name="title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} disabled={uploading || archived} autoFocus /></label>
       <div className="cols"><label>Categorie<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} disabled={uploading || archived}><option value="schade">Schade</option><option value="afsluiting">Afsluiting</option><option value="werkzaamheden">Werkzaamheden</option><option value="overig">Overig</option></select></label>
       <label>Status<select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} disabled={uploading || archived}><option value="open">Open</option><option value="in_behandeling">In behandeling</option></select></label></div>
-      {form.category === 'afsluiting' && <label>Afsluiting tot<input type="datetime-local" value={form.closure_until} onChange={e => setForm({ ...form, closure_until: e.target.value })} disabled={uploading || archived} required /></label>}
+      {form.category === 'afsluiting' && <div className="cols"><label>Afsluiting tot datum<input type="date" value={form.closure_date} onChange={e => setForm({ ...form, closure_date: e.target.value })} disabled={uploading || archived} required /></label><label>Afsluiting tot tijd<input type="time" value={form.closure_time} onChange={e => setForm({ ...form, closure_time: e.target.value })} disabled={uploading || archived} required /></label></div>}
       <div className="cols"><label>Spoed<select value={form.urgent} onChange={e => setForm({ ...form, urgent: e.target.value })} disabled={uploading || archived}><option value="nee">Nee</option><option value="ja">Ja</option></select></label><div className="operator-readonly"><span>Operator</span><strong>👤 {operatorName}</strong></div></div>
       <label>Omschrijving<textarea rows="4" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} disabled={uploading || archived} /></label>
       {!archived && <label className="photo-upload">Foto's toevoegen<input type="file" accept="image/*" multiple onChange={choosePhotos} disabled={uploading} /><small>Je kunt meerdere foto's tegelijk kiezen. Maximaal 10 MB per foto.</small></label>}
@@ -428,7 +432,10 @@ export default function App() {
   }
 
   async function save(form) {
-    const payload = { title: form.title, category: form.category, urgent: form.urgent, status: form.status, notes: form.notes, closure_until: form.category === 'afsluiting' && form.closure_until ? new Date(form.closure_until).toISOString() : null, added_by: operatorName || 'onbekend', lat: position.lat, lng: position.lng, photo_urls: form.photoUrls, photo_url: form.photoUrls[0] || null }
+    const closureUntil = form.category === 'afsluiting' && form.closure_date && form.closure_time
+      ? new Date(`${form.closure_date}T${form.closure_time}`).toISOString()
+      : null
+    const payload = { title: form.title, category: form.category, urgent: form.urgent, status: form.status, notes: form.notes, closure_until: closureUntil, added_by: operatorName || 'onbekend', lat: position.lat, lng: position.lng, photo_urls: form.photoUrls, photo_url: form.photoUrls[0] || null }
     const query = editing ? supabase.from('points').update(payload).eq('id', editing.id) : supabase.from('points').insert(payload)
     const { error: saveError } = await query
     if (saveError) throw saveError
