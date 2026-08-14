@@ -360,7 +360,7 @@ function IncidentModal({ position, point, operatorName, onClose, onSave, onArchi
 
   return <>
     <div className="overlay" onMouseDown={uploading ? undefined : onClose}><form className="modal" onSubmit={submit} onMouseDown={e => e.stopPropagation()}>
-      <div className="modal-head"><div><span>{point ? archived ? 'Verwijderd item' : 'Melding bewerken' : 'Nieuwe melding'}</span><h2>{point?.title || 'Punt toevoegen'}</h2></div><button type="button" onClick={onClose}>×</button></div>
+      <div className="modal-head"><div><span>{point ? archived ? 'Verwijderde melding' : 'Melding bewerken' : 'Nieuwe melding'}</span><h2>{point?.title || 'Melding toevoegen'}</h2></div><button type="button" onClick={onClose}>×</button></div>
       <p className="coords">{position.lat.toFixed(5)}, {position.lng.toFixed(5)}</p>
       {archived && deletedItemInfo && <div style={{ margin: '0 0 16px', padding: '12px 14px', border: '1px solid #d7dee8', borderRadius: '9px', background: '#f7f9fc', color: '#374151' }}><strong style={{ display: 'block', marginBottom: '5px' }}>Verwijderd op</strong><span>{deletedItemInfo.formattedDate}</span><span style={{ display: 'block', marginTop: '8px', fontWeight: 700, color: '#9a4a32' }}>{deletedItemInfo.daysRemaining === 0 ? 'Wordt bij de volgende dagelijkse opruiming definitief verwijderd.' : `Nog ${deletedItemInfo.daysRemaining} ${deletedItemInfo.daysRemaining === 1 ? 'dag' : 'dagen'} tot definitieve verwijdering.`}</span></div>}
       <label>Naam<input name="title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} disabled={uploading || archived} autoFocus /></label>
@@ -370,7 +370,7 @@ function IncidentModal({ position, point, operatorName, onClose, onSave, onArchi
       <label>Omschrijving<textarea rows="4" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} disabled={uploading || archived} /></label>
       {!archived && <label className="photo-upload">Foto's toevoegen<input type="file" accept="image/*" multiple onChange={choosePhotos} disabled={uploading} /><small>Je kunt meerdere foto's tegelijk kiezen. Maximaal 10 MB per foto.</small></label>}
       {allPhotos.length > 0 && <div className="photo-grid">{allPhotos.map((url, index) => <div className="photo-tile" key={`${url}-${index}`}><button type="button" className="photo-open" onClick={() => setLightboxIndex(index)}><img src={url} alt={`Foto ${index + 1}`} /></button>{!archived && <button type="button" className="photo-remove" onClick={() => removePhoto(index)} aria-label="Foto verwijderen">×</button>}</div>)}</div>}
-      <div className="actions">{point && !archived && <button type="button" className="danger" onClick={onArchive}>Punt verwijderen</button>}{point && archived && <button type="button" className="restore" onClick={onRestore}>Punt herstellen</button>}<span /><button type="button" onClick={onClose}>Sluiten</button>{!archived && <button className="primary" disabled={uploading}>{uploading ? 'Foto’s uploaden…' : 'Opslaan'}</button>}</div>
+      <div className="actions">{point && !archived && <button type="button" className="danger" onClick={onArchive}>Melding verwijderen</button>}{point && archived && <button type="button" className="restore" onClick={onRestore}>Melding herstellen</button>}<span /><button type="button" onClick={onClose}>Sluiten</button>{!archived && <button className="primary" disabled={uploading}>{uploading ? 'Foto’s uploaden…' : 'Opslaan'}</button>}</div>
     </form></div>
     {lightboxIndex !== null && <Lightbox photos={allPhotos} index={lightboxIndex} onIndex={setLightboxIndex} onClose={() => setLightboxIndex(null)} />}
   </>
@@ -425,7 +425,7 @@ export default function App() {
   }
 
   async function archivePoint() {
-    if (!editing || !confirm('Dit punt verplaatsen naar Verwijderde items?')) return
+    if (!editing || !confirm('Deze melding verplaatsen naar Verwijderd?')) return
     const { error: archiveError } = await supabase.from('points').update({ status: 'verwijderd' }).eq('id', editing.id)
     if (archiveError) return alert(archiveError.message)
     closeModal()
