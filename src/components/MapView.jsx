@@ -19,14 +19,12 @@ function afsluitingIcon(isSelected, isUrgent) {
         display:flex;
         align-items:center;
         justify-content:center;
-        filter:${isSelected ? 'drop-shadow(0 0 3px rgba(53,165,156,.9))' : 'drop-shadow(0 1px 2px rgba(0,0,0,.45))'};
+        filter:none;
       ">
         <svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 7h16v6H4z" fill="none" stroke="#1f2937" stroke-width="${border + 2}" stroke-linejoin="round"/>
-          <path d="M7 13v5M17 13v5M5 18h4M15 18h4" stroke="#1f2937" stroke-width="4.2" stroke-linecap="round"/>
-          <path d="M4 7h16v6H4z" fill="#f59e0b" stroke="#fff" stroke-width="${border}"/>
+          <path d="M4 7h16v6H4z" fill="#ff7a00" stroke="#fff" stroke-width="${border}"/>
           <path d="M5 8l3 4M10 8l3 4M15 8l3 4" stroke="#fff" stroke-width="2"/>
-          <path d="M7 13v5M17 13v5M5 18h4M15 18h4" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M7 13v5M17 13v5M5 18h4M15 18h4" stroke="#ff7a00" stroke-width="2.2" stroke-linecap="round"/>
         </svg>
       </div>
     `,
