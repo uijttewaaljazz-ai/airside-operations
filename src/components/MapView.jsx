@@ -22,8 +22,8 @@ function afsluitingIcon(isSelected, isUrgent) {
         filter:none;
       ">
         <svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 7h16v6H4z" fill="#ff7a00" stroke="#fff" stroke-width="${border}"/>
-          <path d="M5 8l3 4M10 8l3 4M15 8l3 4" stroke="#fff" stroke-width="2"/>
+          <path d="M4 7h16v6H4z" fill="#ff7a00" stroke="#ffe600" stroke-width="${border}"/>
+          <path d="M5 8l3 4M10 8l3 4M15 8l3 4" stroke="#ffe600" stroke-width="2"/>
           <path d="M7 13v5M17 13v5M5 18h4M15 18h4" stroke="#ff7a00" stroke-width="2.2" stroke-linecap="round"/>
         </svg>
       </div>
