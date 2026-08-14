@@ -31,6 +31,38 @@ function afsluitingIcon(isSelected, isUrgent) {
   })
 }
 
+
+function urgentCircleIcon(point, isSelected) {
+  const size = 24
+  const border = isSelected ? 4 : 2
+  const color = markerColor(point)
+
+  return divIcon({
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    html: `
+      <div style="
+        width:${size}px;
+        height:${size}px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:50%;
+        background:${color};
+        border:${border}px solid #fff;
+        box-sizing:border-box;
+        box-shadow:${isSelected ? '0 0 0 2px rgba(53,165,156,.45)' : '0 1px 4px rgba(0,0,0,.28)'};
+        color:#000;
+        font-family:Arial,sans-serif;
+        font-size:16px;
+        font-weight:900;
+        line-height:1;
+      ">!</div>
+    `,
+  })
+}
+
 function Clicker({ onClick }) {
   const map = useMapEvents({ click(event) {
     if (map.distance(CENTER, event.latlng) > 3000) return alert('Dit punt ligt buiten de toegestane zone van 3 kilometer.')
@@ -69,11 +101,19 @@ export default function MapView({ points, position, editing, focusPoint, onOpenP
             >
               <Tooltip direction="top"><strong>{point.title}</strong><br />{statusLabel(point)} · {normalizePhotos(point).length} foto('s)</Tooltip>
             </Marker>
+          ) : point.urgent === 'ja' ? (
+            <Marker
+              position={[Number(point.lat), Number(point.lng)]}
+              icon={urgentCircleIcon(point, isSelected)}
+              eventHandlers={{ click: () => onOpenPoint(point) }}
+            >
+              <Tooltip direction="top"><strong>{point.title}</strong><br />{statusLabel(point)} · {normalizePhotos(point).length} foto('s)</Tooltip>
+            </Marker>
           ) : (
             <CircleMarker
               className={isSelected ? 'selected-marker' : ''}
               center={[Number(point.lat), Number(point.lng)]}
-              radius={point.urgent === 'ja' ? 12 : 10}
+              radius={10}
               bubblingMouseEvents={false}
               pathOptions={{ color: '#fff', weight: isSelected ? 4 : 2, fillColor: markerColor(point), fillOpacity: .96 }}
               eventHandlers={{ click: () => onOpenPoint(point) }}
