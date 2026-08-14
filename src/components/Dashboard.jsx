@@ -16,7 +16,7 @@ export default function Dashboard({ points, view, setView, filters, setFilters, 
     ['open', 'Open', stats.open, 'alle'],
     ['urgent', 'Spoed', stats.urgent, 'alle'],
     ['schade', 'Schade', stats.damage, 'schade'],
-    ['afsluiting', 'Afzetting', stats.closure, 'afsluiting'],
+    ['afsluiting', 'Afsluiting', stats.closure, 'afsluiting'],
   ]
 
   const bottomCards = [
