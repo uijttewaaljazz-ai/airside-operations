@@ -5,28 +5,31 @@ import { CENTER, RUNWAY, markerColor, normalizePhotos, statusLabel } from '../ut
 
 
 function afsluitingIcon(isSelected, isUrgent) {
-  const size = isUrgent ? 28 : 24
-  const border = isSelected ? 3 : 2
+  const width = 26
+  const height = 22
 
   return divIcon({
     className: '',
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    iconSize: [width, height],
+    iconAnchor: [width / 2, height / 2],
     html: `
-      <div style="
-        width:${size}px;
-        height:${size}px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        filter:none;
-      ">
-        <svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 7h16v6H4z" fill="#ff7a00" stroke="#ffe600" stroke-width="${border}"/>
-          <path d="M5 8l3 4M10 8l3 4M15 8l3 4" stroke="#ffe600" stroke-width="2"/>
-          <path d="M7 13v5M17 13v5M5 18h4M15 18h4" stroke="#ff7a00" stroke-width="2.2" stroke-linecap="round"/>
-        </svg>
-      </div>
+      <svg width="${width}" height="${height}" viewBox="0 0 26 22" aria-hidden="true">
+        <defs>
+          <pattern id="barrier-stripes" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="skewX(-25)">
+            <rect width="4" height="8" fill="#ff2a00"/>
+            <rect x="4" width="4" height="8" fill="#ffd400"/>
+          </pattern>
+        </defs>
+
+        <circle cx="6.5" cy="2.2" r="2.1" fill="#e63720" stroke="#ffd400" stroke-width="1.1"/>
+        <circle cx="19.5" cy="2.2" r="2.1" fill="#e63720" stroke="#ffd400" stroke-width="1.1"/>
+
+        <rect x="2" y="4.8" width="22" height="5.4" rx="0.8" fill="url(#barrier-stripes)"/>
+        <rect x="2" y="11.2" width="22" height="5.4" rx="0.8" fill="url(#barrier-stripes)"/>
+
+        <rect x="6" y="16.4" width="2.6" height="4.3" rx="0.5" fill="#d9d9d9"/>
+        <rect x="17.4" y="16.4" width="2.6" height="4.3" rx="0.5" fill="#d9d9d9"/>
+      </svg>
     `,
   })
 }
