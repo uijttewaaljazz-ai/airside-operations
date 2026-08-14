@@ -31,6 +31,8 @@ export default function Dashboard({ points, view, setView, filters, setFilters, 
       view === 'in_behandeling' ? point.status === 'in_behandeling' :
       view === 'urgent' ? point.urgent === 'ja' && point.status !== 'verwijderd' :
       view === 'verwijderd' ? point.status === 'verwijderd' :
+      view === 'alle' && (filters.category === 'schade' || filters.category === 'afsluiting')
+        ? point.status !== 'verwijderd' :
       true
 
     const categoryOkay = filters.category === 'alle' || point.category === filters.category
