@@ -435,7 +435,7 @@ export default function App() {
     const closureUntil = form.category === 'afsluiting' && form.closure_date && form.closure_time
       ? new Date(`${form.closure_date}T${form.closure_time}`).toISOString()
       : null
-    const payload = { title: form.title, category: form.category, urgent: form.urgent, status: form.status, notes: form.notes, closure_until: closureUntil, added_by: operatorName || 'onbekend', lat: position.lat, lng: position.lng, photo_urls: form.photoUrls, photo_url: form.photoUrls[0] || null }
+    const payload = { title: form.title, category: form.category, urgent: form.urgent, status: form.status, notes: form.notes, closure_until: closureUntil, added_by: editing?.added_by || operatorName || 'onbekend', lat: position.lat, lng: position.lng, photo_urls: form.photoUrls, photo_url: form.photoUrls[0] || null }
     const query = editing ? supabase.from('points').update(payload).eq('id', editing.id) : supabase.from('points').insert(payload)
     const { error: saveError } = await query
     if (saveError) throw saveError
